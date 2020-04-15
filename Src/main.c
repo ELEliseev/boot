@@ -24,7 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#define FLASH_DISK_START_ADDRESS 0x08004400
+#define FLASH_DISK_START_ADDRESS 0x8004400
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -64,6 +64,7 @@ void GoToUserApp(void)
 	GoToApp = (void (*)(void))appAddress;
 	SCB->VTOR = FLASH_DISK_START_ADDRESS;
 	__set_MSP(*((volatile uint32_t*) FLASH_DISK_START_ADDRESS)); //stack pointer (to RAM) for USER app in this address
+	__disable_irq (); // запретить прерывания
 	GoToApp();
 }
 /* USER CODE END 0 */

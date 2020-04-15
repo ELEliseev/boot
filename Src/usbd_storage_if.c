@@ -23,7 +23,7 @@
 #include "usbd_storage_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-#define FLASH_DISK_START_ADDRESS 0x08004400
+#define FLASH_DISK_START_ADDRESS 0x8004400
 FLASH_EraseInitTypeDef EraseInitStruct;
 uint32_t PAGEError = 0;
 uint32_t wordBuff = 0;
