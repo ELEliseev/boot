@@ -27,9 +27,11 @@
 FLASH_EraseInitTypeDef EraseInitStruct;
 uint32_t PAGEError = 0;
 uint32_t wordBuff = 0;
-uint8_t k = 0;
-uint32_t blockFlash=0;
+uint32_t blockFlash = 0;
 uint8_t block=0;
+uint8_t Wordcomplete = 0;
+uint8_t k = 0;
+uint8_t l = 0;
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -97,13 +99,13 @@ uint8_t block=0;
 /** @defgroup USBD_STORAGE_Private_Variables
  * @brief Private variables.
  * @{
- */
+  */
 
 /* USER CODE BEGIN INQUIRY_DATA_FS */
 /** USB Mass storage Standard Inquiry Data. */
 const int8_t STORAGE_Inquirydata_FS[] = {/* 36 */
-
 /* LUN 0 */
+
 0x00, 0x80, 0x02, 0x02, (STANDARD_INQUIRY_DATA_LEN - 5), 0x00, 0x00, 0x00, 'E',
 		'E', 'l', 'i', 's', 'e', 'e', 'v', /* Manufacturer : 8 bytes */
 		'b', 'o', 'o', 't', ' ', ' ', ' ', ' ', /* Product      : 16 Bytes */
@@ -151,8 +153,8 @@ static int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
 static int8_t STORAGE_GetMaxLun_FS(void);
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_DECLARATION */
-void flashErase(uint32_t address){
-EraseInitStruct.TypeErase = FLASH_TYPEERASE_PAGES;
+void flashErase(uint32_t address) {
+	EraseInitStruct.TypeErase = FLASH_TYPEERASE_PAGES;
 	EraseInitStruct.NbPages = 1;
 	EraseInitStruct.PageAddress = address;
 	//EraseInitStruct.Banks = FLASH_BANK_1;
@@ -256,34 +258,33 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr,
  * @param  lun: .
  * @retval USBD_OK if all operations are OK else USBD_FAIL
  */
-int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr,uint16_t blk_len) {
+int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len) {
 	/* USER CODE BEGIN 7 */
+
+
 	switch (lun) {
 	case 0:
 
-		blockFlash = (blk_addr * STORAGE_BLK_SIZ)/1024;
-		if(blockFlash % 1==0){
+		blockFlash = (blk_addr * STORAGE_BLK_SIZ ) / 1024;
+		if (blockFlash % 1 == 0) {
 			flashErase(FLASH_DISK_START_ADDRESS + block * 1024);
-		block++;
+block++;
 		}
-//		if(blockFlash % 2==0){
-//					flashErase(FLASH_DISK_START_ADDRESS + block * 1024);
-//					block++;
-//				}
-//		blockFlash++;
-
 		for (uint16_t i = 0; i < (blk_len * STORAGE_BLK_SIZ); i++) {
-			if (i % 4 == 0 && k>0 ) {
-				k = 0;
-				HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_DISK_START_ADDRESS + (blk_addr * STORAGE_BLK_SIZ) + i-4, wordBuff);
+			if (Wordcomplete == 1) {
+				Wordcomplete = 0;
+				HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD,FLASH_DISK_START_ADDRESS + (blk_addr * STORAGE_BLK_SIZ)+ i - 4, wordBuff);
 				wordBuff = 0;
 			}
-			wordBuff |= (uint32_t) buf[i] << k;
-			k += 8;
-		}
-		if(blockFlash % 1!=0){
-		HAL_FLASH_Lock(); //блокируем флеш память
+			wordBuff |= (uint32_t) buf[i] << k * 8;
+			if (++k > 3) {
+				k = 0;
+				Wordcomplete = 1;
 			}
+		}
+		if (blockFlash % 1 != 0) {
+			HAL_FLASH_Lock(); //блокируем флеш память
+		}
 		break;
 
 	case 1:
